@@ -1,10 +1,12 @@
 import ihm.model
 import logging
-dockinglog = logging.getLogger('log')
+
+dockinglog = logging.getLogger("log")
 
 
 class DockingModel(ihm.model.Model):
     """Subclass to save memory."""
+
     # ======================================================================
     # IMPORTANT #
     # To add the atoms, the class module needs a list containing the following:
@@ -20,6 +22,12 @@ class DockingModel(ihm.model.Model):
 
     def get_atoms(self):
         for asym, seq_id, type_symbol, atom_id, x, y, z in self.atom_list:
-            yield ihm.model.Atom(asym_unit=self.asym_unit_map[asym],
-                                 type_symbol=type_symbol, seq_id=seq_id,
-                                 atom_id=atom_id, x=x, y=y, z=z)
+            yield ihm.model.Atom(
+                asym_unit=self.asym_unit_map[asym],
+                type_symbol=type_symbol,
+                seq_id=seq_id,
+                atom_id=atom_id,
+                x=x,
+                y=y,
+                z=z,
+            )

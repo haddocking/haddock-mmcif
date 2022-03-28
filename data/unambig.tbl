@@ -1,3 +1,0 @@
-! User defined unambiguous restraints
-assign ( resid 1  and segid A) ( resid 2  and segid B)  2.0 2.0 0.0
-

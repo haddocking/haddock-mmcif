@@ -3,14 +3,34 @@ import subprocess
 import shlex
 import os
 
-AA_DICTIONARY = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
-                 'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N',
-                 'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W',
-                 'ALA': 'A', 'VAL': 'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
+AA_DICTIONARY = {
+    "CYS": "C",
+    "ASP": "D",
+    "SER": "S",
+    "GLN": "Q",
+    "LYS": "K",
+    "ILE": "I",
+    "PRO": "P",
+    "THR": "T",
+    "PHE": "F",
+    "ASN": "N",
+    "GLY": "G",
+    "HIS": "H",
+    "LEU": "L",
+    "ARG": "R",
+    "TRP": "W",
+    "ALA": "A",
+    "VAL": "V",
+    "GLU": "E",
+    "TYR": "Y",
+    "MET": "M",
+}
+
+
+TOOL_PATH = Path(Path(__file__).parents[3], "tools")
 
 
 class PDB:
-
     def __init__(self, pdb_f):
         self.pdb_file = Path(pdb_f)
         self.atom_list = []
@@ -23,7 +43,7 @@ class PDB:
         seq_id = None
         with open(self.pdb_file) as fh:
             for line in fh.readlines():
-                if line.startswith('ATOM'):
+                if line.startswith("ATOM"):
                     atom_id = line[12:16].strip()
                     chain = line[21]
                     resname = line[17:20]
@@ -54,13 +74,13 @@ class PDB:
                 except KeyError:
                     # this aminoacid is not in the dictionary,
                     #  overwrite for now
-                    one_letter_res = 'A'
+                    one_letter_res = "A"
                 self.seq_dic[chain].append(one_letter_res)
 
     def get_interface(self, cutoff=5.0):
-        cmd = f'src/contact-chainID {self.pdb_file} {cutoff}'
+        cmd = f"{TOOL_PATH}/contact-chainID {self.pdb_file} {cutoff}"
         out = subprocess.check_output(shlex.split(cmd))  # nosec
-        for line in out.decode('utf-8').split(os.linesep):
+        for line in out.decode("utf-8").split(os.linesep):
             data = line.split()
             if data:
                 res_a, chain_a, _, res_b, chain_b, _, _ = data

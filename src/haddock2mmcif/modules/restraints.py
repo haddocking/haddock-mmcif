@@ -1,10 +1,10 @@
 import re
 import logging
-restlog = logging.getLogger('log')
+
+restlog = logging.getLogger("log")
 
 
-class UnambigRestraint():
-
+class UnambigRestraint:
     def __init__(self, tbl_file):
         self.tbl_file = tbl_file
         self.tbl_list = []
@@ -14,21 +14,26 @@ class UnambigRestraint():
         resid_regex = r"resid\s(\d*)"
         segid_regex = r"segid\s*(\w*)"
         distances_regex = r"(\d*.?\d*)\s(\d*.?\d*)\s(\d*.?\d*)$"
-        with open(self.tbl_file, 'r') as fh:
+        with open(self.tbl_file, "r") as fh:
             for line in fh.readlines():
-                if line.startswith('assign'):
+                if line.startswith("assign"):
                     res_i, res_j = re.findall(resid_regex, line)
                     segid_i, segid_j = re.findall(segid_regex, line)
                     distances = re.findall(distances_regex, line)[0]
                     distance, lower_bound, upper_bound = distances
-                    restraint = (int(res_i), segid_i, int(res_j), segid_j,
-                                 float(distance), float(lower_bound),
-                                 float(upper_bound))
+                    restraint = (
+                        int(res_i),
+                        segid_i,
+                        int(res_j),
+                        segid_j,
+                        float(distance),
+                        float(lower_bound),
+                        float(upper_bound),
+                    )
                     self.tbl_list.append(restraint)
 
 
-class AmbigRestraint():
-
+class AmbigRestraint:
     def __init__(self, tbl_file):
         self.tbl_file = tbl_file
         self.tbl_dic = {}
@@ -36,9 +41,9 @@ class AmbigRestraint():
     def load(self):
         """Load the ambig restraints."""
         tbl_regex = r"resid\s*(\d*).*segid\s*(\w*)"
-        with open(self.tbl_file, 'r') as fh:
+        with open(self.tbl_file, "r") as fh:
             for line in fh.readlines():
-                if line.startswith('assign'):
+                if line.startswith("assign"):
                     # this is a special line
                     # do something special
                     match = re.search(tbl_regex, line)
