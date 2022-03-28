@@ -41,6 +41,8 @@ $ cd ..
 
 ## Usage
 
+The input for `haddock2mmcif` is the folder of a run-directory, either downloaded from the web server or executed locally.
+
 ```
 $ cd example_data
 $ tar zxvf 6269-E2A-HPR.tgz
