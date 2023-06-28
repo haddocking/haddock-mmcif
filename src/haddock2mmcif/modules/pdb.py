@@ -2,6 +2,7 @@ from pathlib import Path
 import subprocess
 import shlex
 import os
+from haddock2mmcif.modules.utils import backmap
 
 AA_DICTIONARY = {
     "CYS": "C",
@@ -40,7 +41,7 @@ class PDB:
 
     def load(self):
         pdb_dic = {}
-        seq_id = None
+        seq_id = 0
         with open(self.pdb_file) as fh:
             for line in fh.readlines():
                 if line.startswith("ATOM"):
@@ -93,8 +94,10 @@ class PDB:
                 if chain_b not in self.interface_dic:
                     self.interface_dic[chain_b] = []
 
-                if res_a not in self.interface_dic[chain_a]:
-                    self.interface_dic[chain_a].append(res_a)
+                mapped_res_a = backmap(self.map_dic[chain_a], res_a)
+                if mapped_res_a not in self.interface_dic[chain_a]:
+                    self.interface_dic[chain_a].append(mapped_res_a)
 
-                if res_b not in self.interface_dic[chain_b]:
-                    self.interface_dic[chain_b].append(res_b)
+                mapped_res_b = backmap(self.map_dic[chain_b], res_b)
+                if mapped_res_b not in self.interface_dic[chain_b]:
+                    self.interface_dic[chain_b].append(mapped_res_b)
