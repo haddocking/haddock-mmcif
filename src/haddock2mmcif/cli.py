@@ -16,6 +16,7 @@ import ihm.restraint
 from haddock2mmcif.modules.docking import DockingModel
 from haddock2mmcif.modules.pdb import PDB
 from haddock2mmcif.modules.restraints import AmbigRestraint, UnambigRestraint
+from haddock2mmcif.modules.utils import backmap
 
 log = logging.getLogger("log")
 log.setLevel(logging.INFO)
@@ -29,7 +30,7 @@ log.addHandler(ch)
 PARAM_REGEX = r"{===>}\s(\w+)=(\d.*);"
 
 
-def rank_clusters(cluster_out, file_list):
+def rank_clusters(cluster_out: Path, file_list: Path) -> dict[int, int]:
     """Rank the clusters based on their combined score."""
     score_dic = {}
     score_regex = r"{\s(-?\d*.?\d*)\s}"
@@ -41,7 +42,7 @@ def rank_clusters(cluster_out, file_list):
                 score_dic[model_idx] = score
 
     clt_dic = {}
-    cluster_line_regex = r"Cluster\s(\d)\s->\s\d+\s(.*)"
+    cluster_line_regex = r"Cluster\s(\d+)\s->\s\d+\s(.*)"
     with open(cluster_out, "r") as c_fh:
         for line in c_fh.readlines():
             match = re.search(cluster_line_regex, line)
@@ -61,16 +62,16 @@ def rank_clusters(cluster_out, file_list):
                 clt_dic[cluster_name] = avg_top4
 
     ranking_dic = {}
-    for ranking, cluster_name in enumerate(sorted(clt_dic, key=clt_dic.get)):
+    for ranking, cluster_name in enumerate(sorted(clt_dic, key=clt_dic.get)):  # type: ignore
         ranking_dic[ranking + 1] = cluster_name
 
     return ranking_dic
 
 
-def get_final_models(path):
+def get_final_models(path: Path) -> dict[int, list[Path]]:
     """Get the final clusterN_N.pdb stuctures."""
-    cluster_regex = r"cluster(\d)_\d.pdb"
-    cluster_dic = {}
+    cluster_regex = r"cluster(\d+)_\d+.pdb"
+    cluster_dic: dict[int, list[Path]] = {}
     for element in sorted(path.glob("*pdb")):
         match = re.search(cluster_regex, str(element))
         if match:
@@ -93,6 +94,7 @@ def get_probability(run_cns):
     """Read the run.cns and look for noecv/ncvpart."""
     noecv = False
     ncvpart = 0.0
+    probability = 0.0
     with open(run_cns, "r") as fh:
         for line in fh.readlines():
             if "noecv" in line and "true" in line:
@@ -129,7 +131,6 @@ def get_flcut(run_cns):
 
 
 def main():
-
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("rundir", type=str, help="")
     parser.add_argument("--output", type=str, help="")
@@ -211,6 +212,11 @@ def main():
     group_list = []
     for ranking in cluster_ranking:
         cluster_name = cluster_ranking[ranking]
+
+        # Haddock only generates clusters that contain a minimum number of models
+        if cluster_name not in clustered_structures:
+            continue
+
         model_list = []
         for structure in clustered_structures[cluster_name]:
             log.info(f"Processing {structure.name}")
@@ -280,18 +286,33 @@ def main():
     log.info(f"Getting probability from {run_cns}")
     prob = get_probability(run_cns)
     for i, active in enumerate(ambig.tbl_dic):
+        # Imporant, the `active_res` is related to the `ambig.tbl` file,
+        #  to add it to the system, it needs to be mapped to the asymetric unit
         active_res, active_segid = active
+
+        # Get the asymetric unit
         active_asym = asym_dic[active_segid]
 
-        active_rng = active_asym(active_res, active_res)
+        # Map the residue back to the asymetric unit numbering
+        mapped_active_res = backmap(active_asym.auth_seq_id_map, active_res)
+
+        active_rng = active_asym(mapped_active_res, mapped_active_res)
 
         passive_l = ambig.tbl_dic[active]
         passive_ranges = []
         for element in passive_l:
+            # Imporant, the `passive_res` is related to the `ambig.tbl` file,
+            #  to add it to the system, it needs to be mapped to the asymetric unit
             passive_res, passive_segid = element
+
+            # Get the asymetric unit
             passive_asym = asym_dic[passive_segid]
 
-            passive_rng = passive_asym(passive_res, passive_res)
+            # Map the residue back to the asymetric unit numbering
+            mapped_passive_res = backmap(passive_asym.auth_seq_id_map, passive_res)
+
+            passive_rng = passive_asym(mapped_passive_res, mapped_passive_res)
+
             passive_ranges.append(passive_rng)
 
         active = ihm.restraint.ResidueFeature(
@@ -361,7 +382,7 @@ def main():
 
     log.info(f"Dumping to {output_fname}")
 
-    with open(f"{output_fname}.cif", "w") as fh:
+    with open(f"{output_fname}", "w") as fh:
         ihm.dumper.write(fh, [system])
 
 
